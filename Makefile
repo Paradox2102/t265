@@ -1,6 +1,6 @@
 CXX      := -g++
 CXXFLAGS := -pedantic-errors -Wall -Wextra -std=gnu++11
-LIBS     := -lstdc++ -lm -lrealsense2 -lntcore
+LIBS     := -lstdc++ -lm -lrealsense2 -lpthread
 LDFLAGS  := -L/usr/lib -L./lib 
 BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
