@@ -33,7 +33,7 @@
 //#include "networktables/NetworkTableInstance.h"
 
 const double degrees_per_radian = 180 / 3.14159265358979323;
-const double inches_per_metre = 1 / 0.0254;
+const double feet_per_metre = 1.0 / 12.0 / 0.0254;
 
 // Code taken from John's NetworkVision
 using namespace std;
@@ -400,7 +400,7 @@ public:
                         int frame  = -1;
                         while (true) {
                         	++frame;
-                        	if(frame % 200 != 0) { continue; }
+                        	//if(frame % 200 != 0) { continue; }
                             // Wait for the next set of frames from the camera
                             auto frames = pipe.wait_for_frames();
                             // Get a frame from the pose stream
@@ -408,15 +408,20 @@ public:
                             // Cast the frame to pose_frame and get its data
                             auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
 
-                            double x = pose_data.translation.x * inches_per_metre;
-                            double y = -pose_data.translation.z * inches_per_metre;
+                            //double x = pose_data.translation.x * inches_per_metre;
+                            //double y = -pose_data.translation.z * inches_per_metre;
+                            double x = pose_data.translation.x * feet_per_metre;
+                            double y = -pose_data.translation.z * feet_per_metre;
 
-                            double sinp = 2 * (pose_data.rotation.w * pose_data.rotation.y - 
-                                pose_data.rotation.z * pose_data.rotation.x);
-                            double yaw = (std::abs(sinp) >= 1 ?
-                                std::copysign(M_PI / 2, sinp) : std::asin(sinp))
-                                * degrees_per_radian;
-                        
+                            // https://github.com/IntelRealSense/librealsense/issues/3129#issuecomment-475782301
+                            // Convert quarternions into yaw
+                            double qw = pose_data.rotation.w;
+                            double qx = pose_data.rotation.x;
+                            double qz = pose_data.rotation.y; // Swapped in weird frame
+                            double qy = pose_data.rotation.z;
+
+                            double yaw = atan2(2.0*(qx*qy + qw*qz), qw*qw + qx*qx - qy*qy - qz*qz) * degrees_per_radian;
+
                             snprintf(msg, sizeof(msg), "P %lf %lf %lf %d %d\n",
                                 x, y, yaw, (int)pose_data.tracker_confidence,
                                 (int)pose_data.mapper_confidence);
