@@ -119,7 +119,11 @@ public:
         if (bind(m_serverSocket, (struct sockaddr *)&serverAddr, sockAddrSize) == ERROR)
         {
             ::close(m_serverSocket);
+<<<<<<< HEAD
             m_serverSocket = ERROR; 
+=======
+            m_serverSocket = ERROR;
+>>>>>>> 3a51ba2a42c81b138e0101d9aff114752128a4f2
             printf("Could not bind server socket: %d", errno);
             return(false);
         }
@@ -358,7 +362,11 @@ public:
 
                 if ((command[0] != 'T') && (command[0] != '\n') && (command[0] != '\r'))
                 {
+<<<<<<< HEAD
                     //printf("command: %s\n", command);
+=======
+                    printf("command: %s\n", command);
+>>>>>>> 3a51ba2a42c81b138e0101d9aff114752128a4f2
                 }
             }
         }
@@ -390,7 +398,6 @@ public:
                         // Create a configuration for configuring the pipeline with a non default profile
                         rs2::config cfg;
                         // Add pose stream
-                        int frames_per_second = 10;
                         cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
                         // Start pipeline with chosen configuration
                         pipe.start(cfg);
