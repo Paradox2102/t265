@@ -119,7 +119,7 @@ public:
         if (bind(m_serverSocket, (struct sockaddr *)&serverAddr, sockAddrSize) == ERROR)
         {
             ::close(m_serverSocket);
-            m_serverSocket = ERROR;
+            m_serverSocket = ERROR; 
             printf("Could not bind server socket: %d", errno);
             return(false);
         }
@@ -390,6 +390,7 @@ public:
                         // Create a configuration for configuring the pipeline with a non default profile
                         rs2::config cfg;
                         // Add pose stream
+                        int frames_per_second = 10;
                         cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
                         // Start pipeline with chosen configuration
                         pipe.start(cfg);
@@ -399,18 +400,15 @@ public:
                         // Main loop
                         int frame  = -1;
                         while (true) {
-				auto frames = pipe.wait_for_frames();
-                        	++frame;
-                        	if(frame % 20 != 0) { continue; }
                             // Wait for the next set of frames from the camera
-                            //auto frames = pipe.wait_for_frames();
+				            auto frames = pipe.wait_for_frames();
+                        	++frame;
+                            if(frame % 20 != 0) { continue; }
                             // Get a frame from the pose stream
                             auto f = frames.first_or_default(RS2_STREAM_POSE);
                             // Cast the frame to pose_frame and get its data
                             auto pose_data = f.as<rs2::pose_frame>().get_pose_data();
 
-                            //double x = pose_data.translation.x * inches_per_metre;
-                            //double y = -pose_data.translation.z * inches_per_metre;
                             double x = pose_data.translation.x * feet_per_metre;
                             double y = -pose_data.translation.z * feet_per_metre;
 
@@ -423,9 +421,18 @@ public:
 
                             double yaw = atan2(2.0*(qx*qy + qw*qz), qw*qw + qx*qx - qy*qy - qz*qz) * degrees_per_radian;
 
-                            snprintf(msg, sizeof(msg), "P %lf %lf %lf %d %d\n",
+                            double dx = pose_data.velocity.x * feet_per_metre;
+                            double dy = pose_data.velocity.z * feet_per_metre;
+                            double dyaw = pose_data.angular_velocity.y * degrees_per_radian;
+
+                            double ddx = pose_data.acceleration.x * feet_per_metre;
+                            double ddy = pose_data.acceleration.z * feet_per_metre;
+                            double ddyaw = pose_data.angular_acceleration.y * degrees_per_radian;
+
+                            snprintf(msg, sizeof(msg), "P %lf %lf %lf %d %d %lf %lf %lf %lf %lf %lf\n",
                                 x, y, yaw, (int)pose_data.tracker_confidence,
-                                (int)pose_data.mapper_confidence);
+                                (int)pose_data.mapper_confidence,
+                                dx, dy, dyaw, ddx, ddy, ddyaw);
 							//printf(msg);
                             if (write((void *) msg, strlen(msg)) == ERROR) {
                                 printf("write failed\n");
@@ -446,8 +453,11 @@ public:
                     }
                 }
             }
+        } catch (const std::exception &exc) {
+            // catch anything thrown within try block that derives from std::exception
+            std::cerr << "Caught exception: " << exc.what() << std::endl;
         } catch (...) {
-            printf("Caught exception\n");
+            printf("Caught something else\n");
         }
     }
 } NetworkServer;
